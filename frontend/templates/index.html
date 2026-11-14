@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reinforcement Learning Agent for Sequential Decision Environments</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- KaTeX CSS for LaTeX Math Formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+
+    <!-- Custom AI Dashboard CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+
+    <!-- ==========================================
+         Navigation Sidebar
+    ========================================== -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-icon">
+                <i class="bi bi-cpu-fill"></i>
+            </div>
+            <div>
+                <div class="brand-title">RL Decisions</div>
+                <div class="brand-subtitle">Sequential AI Lab</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-label">Main Navigation</div>
+
+            <a href="#" class="nav-item-link active" data-page="dashboard">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>1. Dashboard</span>
+            </a>
+
+            <a href="#" class="nav-item-link" data-page="gridworld">
+                <i class="bi bi-compass-fill"></i>
+                <span>2. Grid World Env</span>
+            </a>
+
+            <a href="#" class="nav-item-link" data-page="train">
+                <i class="bi bi-lightning-charge-fill"></i>
+                <span>3. Train Agent</span>
+            </a>
+
+            <a href="#" class="nav-item-link" data-page="comparison">
+                <i class="bi bi-bar-chart-steps"></i>
+                <span>4. Algorithm Comparison</span>
+            </a>
+
+            <a href="#" class="nav-item-link" data-page="analytics">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span>5. Performance Analytics</span>
+            </a>
+
+            <div class="nav-label mt-3">Documentation</div>
+
+            <a href="#" class="nav-item-link" data-page="theory">
+                <i class="bi bi-book-half"></i>
+                <span>6. Learning Theory</span>
+            </a>
+
+            <a href="#" class="nav-item-link" data-page="about">
+                <i class="bi bi-info-circle-fill"></i>
+                <span>7. About Project</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="live-indicator"></span>
+                    <span class="small text-secondary">Flask Backend</span>
+                </div>
+                <span class="badge bg-dark border border-secondary text-info">v1.0.0</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ==========================================
+         Main Workspace & Content Views
+    ========================================== -->
+    <div class="main-content">
+
+        <!-- Top Header Bar -->
+        <header class="top-navbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-secondary btn-sm d-lg-none" id="sidebar-toggle" aria-label="Toggle Navigation">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <div class="d-none d-md-block">
+                    <span class="fw-bold text-light">Sequential Decision Making</span>
+                    <span class="text-muted ms-2">| AI Foundations Project</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <span class="page-title-badge">
+                    <i class="bi bi-activity me-1"></i> MDP Environment Ready
+                </span>
+                <button class="btn btn-sm btn-outline-info" onclick="window.App.navigateTo('train')">
+                    <i class="bi bi-play-circle me-1"></i> Quick Train
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Body Container -->
+        <main class="container-fluid p-4">
+
+            <!-- ==========================================
+                 PAGE 1: HOME / DASHBOARD
+            ========================================== -->
+            <section id="page-dashboard" class="page-view active-page">
+                <!-- Hero Header -->
+                <div class="ai-card mb-4 bg-gradient" style="background: linear-gradient(135deg, #101c36 0%, #0d172c 100%);">
+                    <div class="row align-items-center g-3">
+                        <div class="col-lg-8">
+                            <span class="badge bg-primary bg-opacity-25 text-info border border-info mb-2">College AI Foundations Project</span>
+                            <h2 class="fw-bold text-white mb-2">Reinforcement Learning Agent for Sequential Decision Environments</h2>
+                            <p class="text-secondary mb-3">
+                                Explore how intelligent agents learn optimal navigation policies through trial-and-error interactions.
+                                Compare <strong>Q-Learning</strong> (Off-policy TD), <strong>SARSA</strong> (On-policy TD), and a classical <strong>Goal-Based Agent</strong> baseline across dynamic grid environments.
+                            </p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn-ai-primary" onclick="window.App.navigateTo('gridworld')">
+                                    <i class="bi bi-compass"></i> Interactive Grid World
+                                </button>
+                                <button class="btn-ai-secondary" onclick="window.App.navigateTo('train')">
+                                    <i class="bi bi-lightning-charge"></i> Train Agent
+                                </button>
+                                <button class="btn-ai-secondary" onclick="window.App.navigateTo('comparison')">
+                                    <i class="bi bi-bar-chart-steps"></i> View Algorithm Comparison
+                                </button>
+                                <button class="btn-ai-secondary" onclick="window.App.navigateTo('theory')">
+                                    <i class="bi bi-book"></i> Read Learning Theory
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 text-center d-none d-lg-block">
+                            <div class="p-3 rounded-4" style="background: rgba(0, 242, 254, 0.05); border: 1px dashed rgba(0, 242, 254, 0.25);">
+                                <i class="bi bi-diagram-3 fs-1 text-cyan mb-2 d-block"></i>
+                                <span class="small text-muted d-block">Markov Decision Process</span>
+                                <strong class="text-white">&lang;S, A, P, R, &gamma;&rang;</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Metric Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-xl-2">
+                        <div class="stat-card">
+                            <div class="stat-icon cyan"><i class="bi bi-repeat"></i></div>
+                            <div class="stat-label">Total Episodes</div>
+                            <div class="stat-value" id="dash-total-episodes">0</div>
+                            <div class="stat-meta text-cyan"><i class="bi bi-check-circle me-1"></i>Across sessions</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card">
+                            <div class="stat-icon indigo"><i class="bi bi-cpu"></i></div>
+                            <div class="stat-label">Current Algorithm</div>
+                            <div class="stat-value fs-4" id="dash-current-algo">Q-Learning</div>
+                            <div class="stat-meta text-muted">Active agent model</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-2">
+                        <div class="stat-card">
+                            <div class="stat-icon emerald"><i class="bi bi-trophy"></i></div>
+                            <div class="stat-label">Average Reward</div>
+                            <div class="stat-value" id="dash-avg-reward">0.0</div>
+                            <div class="stat-meta text-emerald">Recent evaluation</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-2">
+                        <div class="stat-card">
+                            <div class="stat-icon amber"><i class="bi bi-bullseye"></i></div>
+                            <div class="stat-label">Success Rate</div>
+                            <div class="stat-value" id="dash-success-rate">0.0%</div>
+                            <div class="stat-meta text-amber">Goal reached %</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card">
+                            <div class="stat-icon rose"><i class="bi bi-check2-all"></i></div>
+                            <div class="stat-label">Successful Sessions</div>
+                            <div class="stat-value" id="dash-successful-episodes">0</div>
+                            <div class="stat-meta text-muted">Sessions with &gt;80% success</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Sessions Table & Architecture Highlights -->
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="ai-card">
+                            <div class="ai-card-header">
+                                <div class="ai-card-title">
+                                    <i class="bi bi-clock-history"></i> Recent Training Sessions (SQLite History)
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="window.App.loadDashboardData()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table-ai">
+                                    <thead>
+                                        <tr>
+                                            <th>Algorithm</th>
+                                            <th>Episodes</th>
+                                            <th>Avg Reward</th>
+                                            <th>Success Rate</th>
+                                            <th>Avg Steps</th>
+                                            <th>Timestamp</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dash-recent-sessions-body">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">Loading sessions from database...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="ai-card">
+                            <div class="ai-card-header">
+                                <div class="ai-card-title">
+                                    <i class="bi bi-layers"></i> Reinforcement Learning Paradigm
+                                </div>
+                            </div>
+                            <div class="mb-3 p-3 rounded-3" style="background: rgba(0,0,0,0.25);">
+                                <div class="d-flex align-items-center gap-2 text-cyan fw-bold mb-1">
+                                    <i class="bi bi-1-circle-fill"></i> Q-Learning (Off-Policy TD)
+                                </div>
+                                <p class="small text-muted mb-0">Updates Q-values assuming greedy action next: learns the optimal direct path ignoring exploration risks.</p>
+                            </div>
+                            <div class="mb-3 p-3 rounded-3" style="background: rgba(0,0,0,0.25);">
+                                <div class="d-flex align-items-center gap-2 text-indigo fw-bold mb-1">
+                                    <i class="bi bi-2-circle-fill"></i> SARSA (On-Policy TD)
+                                </div>
+                                <p class="small text-muted mb-0">Updates using actual next exploratory action: adopts conservative policies with wider obstacle clearance.</p>
+                            </div>
+                            <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25);">
+                                <div class="d-flex align-items-center gap-2 text-amber fw-bold mb-1">
+                                    <i class="bi bi-3-circle-fill"></i> Goal-Based Agent (Baseline)
+                                </div>
+                                <p class="small text-muted mb-0">Classical Breadth-First Search (BFS) with full map knowledge for theoretical shortest path benchmark.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 PAGE 2: GRID WORLD ENVIRONMENT
+            ========================================== -->
+            <section id="page-gridworld" class="page-view">
+                <div class="row g-4">
+                    <!-- Grid Canvas Column -->
+                    <div class="col-xl-8">
+                        <div class="ai-card">
+                            <div class="ai-card-header">
+                                <div class="ai-card-title">
+                                    <i class="bi bi-grid-3x3"></i> Interactive Grid World Canvas
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn btn-sm btn-outline-info" id="btn-load-learned-policy">
+                                        <i class="bi bi-box-arrow-in-down me-1"></i> Load Learned Policy
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Live HUD Telemetry -->
+                            <div class="hud-panel mb-3">
+                                <div class="hud-item">
+                                    <span class="hud-label">Agent Position</span>
+                                    <span class="hud-value text-cyan" id="hud-agent-pos">(0, 0)</span>
+                                </div>
+                                <div class="hud-item">
+                                    <span class="hud-label">Steps Taken</span>
+                                    <span class="hud-value" id="hud-steps">0</span>
+                                </div>
+                                <div class="hud-item">
+                                    <span class="hud-label">Accumulated Reward</span>
+                                    <span class="hud-value text-emerald" id="hud-reward">0.0</span>
+                                </div>
+                                <div class="hud-item">
+                                    <span class="hud-label">Last Action</span>
+                                    <span class="hud-value text-info" id="hud-action">START</span>
+                                </div>
+                                <div class="hud-item">
+                                    <span class="hud-label">Navigation Status</span>
+                                    <span class="hud-value text-warning fs-6" id="hud-status">Ready</span>
+                                </div>
+                            </div>
+
+                            <!-- Grid Canvas Viewport -->
+                            <div class="grid-world-wrapper" id="grid-world-canvas">
+                                <!-- Rendered dynamically by gridworld.js -->
+                            </div>
+
+                            <!-- Playback Control Bar -->
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3 pt-3 border-top border-secondary border-opacity-25">
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn-ai-primary" id="btn-sim-start">
+                                        <i class="bi bi-play-fill"></i> Start Simulation
+                                    </button>
+                                    <button class="btn-ai-secondary" id="btn-sim-pause">
+                                        <i class="bi bi-pause-fill"></i> Pause
+                                    </button>
+                                    <button class="btn-ai-secondary" id="btn-sim-step">
+                                        <i class="bi bi-skip-forward-fill"></i> Step
+                                    </button>
+                                    <button class="btn-ai-secondary" id="btn-sim-reset">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                    </button>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small text-muted">Playback Speed:</span>
+                                    <select class="form-select-ai form-select-sm" id="sim-speed-select" style="width: 120px;">
+                                        <option value="slow">Slow</option>
+                                        <option value="normal" selected>Normal</option>
+                                        <option value="fast">Fast</option>
+                                        <option value="ultra">Ultra Fast</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Environment Controls Column -->
+                    <div class="col-xl-4">
+                        <div class="ai-card mb-4">
+                            <div class="ai-card-header">
+                                <div class="ai-card-title">
+                                    <i class="bi bi-sliders"></i> Environment Customization
+                                </div>
+                            </div>
+
+                            <!-- Interactive Click Mode -->
+                            <div class="mb-4">
+                                <label class="form-label-ai mb-2">Cell Click Interaction Mode</label>
+                                <div class="d-flex flex-column gap-2">
+                                    <label class="d-flex align-items-center gap-2 p-2 rounded bg-dark border border-secondary border-opacity-25 cursor-pointer">
+                                        <input type="radio" name="grid-interaction-mode" value="toggle_obstacle" checked>
+                                        <span><i class="bi bi-bricks text-danger me-1"></i> Toggle Obstacle</span>
+                                    </label>
+                                    <label class="d-flex align-items-center gap-2 p-2 rounded bg-dark border border-secondary border-opacity-25 cursor-pointer">
+                                        <input type="radio" name="grid-interaction-mode" value="set_start">
+                                        <span><i class="bi bi-geo-alt-fill text-success me-1"></i> Set Start Position (Green)</span>
+                                    </label>
+                                    <label class="d-flex align-items-center gap-2 p-2 rounded bg-dark border border-secondary border-opacity-25 cursor-pointer">
+                                        <input type="radio" name="grid-interaction-mode" value="set_goal">
+                                        <span><i class="bi bi-trophy-fill text-warning me-1"></i> Set Goal Position (Gold)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Preset Layouts -->
+                            <div class="mb-4">
+                                <label class="form-label-ai">Preset Maze Layout</label>
+                                <select class="form-select-ai w-100" id="grid-preset-select">
+                                    <option value="default">Default Challenge Maze</option>
+                                    <option value="four_rooms">Classic Four Rooms Benchmark</option>
+                                    <option value="bottleneck">Narrow Bottleneck</option>
+                                    <option value="cliff">Cliff Walking Corridor</option>
+                                    <option value="empty">Empty Open Grid</option>
+                                </select>
+                            </div>
+
+                            <!-- Grid Size Dimensions -->
+                            <div class="mb-4">
+                                <label class="form-label-ai">Change Grid Dimensions</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-dark border-secondary text-secondary">Rows</span>
+                                            <input type="number" class="form-control-ai form-control-sm" id="input-grid-rows" value="10" min="4" max="20">
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-dark border-secondary text-secondary">Cols</span>
+                                            <input type="number" class="form-control-ai form-control-sm" id="input-grid-cols" value="10" min="4" max="20">
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-info flex-grow-1" id="btn-apply-dimensions">
+                                                Apply Dimensions
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" id="btn-clear-obstacles">
+                                                Clear Obstacles
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Visualization Overlays -->
+                            <div>
+                                <label class="form-label-ai mb-2">Policy & Value Overlays</label>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="toggle-policy-arrows">
+                                    <label class="form-check-label text-secondary small" for="toggle-policy-arrows">
+                                        Show Policy Direction Arrows (&uarr;, &darr;, &larr;, &rarr;)
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="toggle-heatmap">
+                                    <label class="form-check-label text-secondary small" for="toggle-heatmap">
+                                        Show Q-Value State Heatmap Gradient
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="toggle-coords">
+                                    <label class="form-check-label text-secondary small" for="toggle-coords">
+                                        Show Coordinates (r, c)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Legend Card -->
+                        <div class="ai-card">
+                            <div class="ai-card-title mb-3 fs-6">
+                                <i class="bi bi-info-circle"></i> Grid Elements & Reward Rules
+                            </div>
+                            <div class="small text-secondary d-flex flex-column gap-2">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span><span class="badge bg-success me-2">&nbsp;</span> Starting Cell (Green)</span>
+                                    <span class="text-muted">Agent Start</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span><span class="badge bg-warning text-dark me-2">&nbsp;</span> Goal Cell (Gold)</span>
+                                    <span class="text-emerald fw-bold">+100 Reward</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span><span class="badge bg-dark border border-danger me-2">&nbsp;</span> Obstacle Cell (Dark)</span>
+                                    <span class="text-danger fw-bold">-10 Reward</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span><span class="badge bg-primary me-2">&nbsp;</span> Normal Grid Step</span>
+                                    <span class="text-secondary">-1 Reward</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span><span class="badge bg-danger me-2">&nbsp;</span> Out of Bounds Collision</span>
+                                    <span class="text-danger">-5 Reward</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 PAGE 3: TRAINING AGENT
+            ========================================== -->
+            <section id="page-train" class="page-view">
+                <div class="row g-4">
+                    <!-- Left Column: Algorithm Selection & Parameters -->
+                    <div class="col-lg-5">
+                        <div class="ai-card mb-4">
+                            <div class="ai-card-header">
+                                <div class="ai-card-title">
+                                    <i class="bi bi-cpu"></i> 1. Select Algorithm
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-4">
+                                <div class="col-12">
+                                    <div class="algo-card-select selected" data-algo="q_learning">
+                                        <span class="algo-badge badge-rl">Off-Policy TD Control</span>
+                                        <h5 class="fw-bold text-white mb-1">Q-Learning</h5>
+                                        <p class="text-secondary small mb-0">Updates via greedy max target $\max_{a'} Q(s', a')$. Learns the optimal path directly.</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="algo-card-select" data-algo="sarsa">
+                                        <span class="algo-badge badge-rl">On-Policy TD Control</span>
+                                        <h5 class="fw-bold text-white mb-1">SARSA</h5>
+                                        <p class="text-secondary small mb-0">Updates using action chosen by current policy $Q(s', a')$. Safer near obstacles.</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="algo-card-select" data-algo="goal_based">
+                                        <span class="algo-badge badge-baseline">Classical BFS Baseline</span>
+                                        <h5 class="fw-bold text-white mb-1">Goal-Based Agent</h5>
+                                        <p class="text-secondary small mb-0">Deterministic Breadth-First Search (Non-RL baseline with full map knowledge).</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Parameters -->
+                            <div class="ai-card-header">
+                                <div class="ai-card-title">
+                                    <i class="bi bi-sliders2"></i> 2. Configure Hyperparameters
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-ai">
+                                    <span>Learning Rate (&alpha;)</span>
+                                    <span class="form-label-value" id="val-alpha">0.10</span>
+                                </div>
+                                <input type="range" class="form-range-ai" id="param-alpha" min="0.01" max="1.0" step="0.01" value="0.10">
+                                <div class="small text-muted">Controls how much new TD error overrides old Q-values.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-ai">
+                                    <span>Discount Factor (&gamma;)</span>
+                                    <span class="form-label-value" id="val-gamma">0.95</span>
+                                </div>
+                                <input type="range" class="form-range-ai" id="param-gamma" min="0.1" max="0.99" step="0.01" value="0.95">
+                                <div class="small text-muted">Weight given to future expected rewards vs immediate rewards.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-ai">
+                                    <span>Initial Exploration Rate (&epsilon;)</span>
+                                    <span class="form-label-value" id="val-epsilon">1.00</span>
+                                </div>
+                                <input type="range" class="form-range-ai" id="param-epsilon" min="0.0" max="1.0" step="0.05" value="1.00">
+                                <div class="small text-muted">Probability of selecting a random action for exploration.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-ai">
+                                    <span>Epsilon Decay Rate</span>
+                                    <span class="form-label-value" id="val-decay">0.995</span>
+                                </div>
+                                <input type="range" class="form-range-ai" id="param-decay" min="0.900" max="0.999" step="0.001" value="0.995">
+                                <div class="small text-muted">Multiplier applied to &epsilon; after each episode.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-label-ai">
+                                    <span>Minimum Epsilon (&epsilon; min)</span>
+                                    <span class="form-label-value" id="val-min-epsilon">0.010</span>
+                                </div>
+                                <input type="range" class="form-range-ai" id="param-min-epsilon" min="0.001" max="0.30" step="0.005" value="0.010">
+                                <div class="small text-muted">Floor below which exploration rate does not drop.</div>
+                            </div>
+
+                            <div class="row g-2 mb-4">
+                                <div class="col-6">
+                                    <div class="form-label-ai">
+                                        <span>Episodes</span>
+                                        <span class="form-label-value" id="val-episodes">1000</span>
+                                    </div>
+                                    <input type="range" class="form-range-ai" id="param-episodes" min="50" max="3000" step="50" value="1000">
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-label-ai">
+                                        <span>Max Steps</span>
+                                        <span class="form-label-value" id="val-max-steps">200</span>
+                                    </div>
+                                    <input type="range" class="form-range-ai" id="param-max-steps" min="30" max="400" step="10" value="200">
+                                </div>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn-ai-primary flex-grow-1" id="btn-train-start">
+                                    <i class="bi bi-play-fill fs-5"></i> Start Training
+                                </button>
+                                <button class="btn-ai-warning" id="btn-train-pause" disabled>
+                                    <i class="bi bi-pause-fill"></i> Pause
+                                </button>
+                                <button class="btn-ai-secondary" id="btn-train-resume" disabled>
+                                    <i class="bi bi-play-circle"></i> Resume
+                                </button>
+                                <button class="btn-ai-danger" id="btn-train-stop" disabled>
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                <button class="btn-ai-secondary" id="btn-train-reset">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Real-Time Telemetry & Charts -->
+                    <div class="col-lg-7">
+                        <div class="ai-card mb-4">
+                            <div class="ai-card-header">
+                                <div class="ai-card-title">
+                                    <i class="bi bi-activity"></i> Real-Time Training Telemetry
+                                </div>
+                                <span class="badge bg-secondary" id="train-status-badge">IDLE</span>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Training Progress</span>
+                                    <span class="text-cyan fw-bold" id="train-progress-percentage">0%</span>
+                                </div>
+                                <div class="progress-ai">
+                                    <div class="progress-bar-ai" id="train-progress-bar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Live Metric Counters -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
+                                        <div class="small text-muted">Episode</div>
+                                        <div class="fs-4 fw-bold text-white font-monospace" id="train-hud-episode">0 / 1000</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
+                                        <div class="small text-muted">Episode Reward</div>
+                                        <div class="fs-4 fw-bold text-emerald font-monospace" id="train-hud-reward">0.0</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
+                                        <div class="small text-muted">Rolling Avg (50 ep)</div>
+                                        <div class="fs-4 fw-bold text-cyan font-monospace" id="train-hud-avg-reward">0.0</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
+                                        <div class="small text-muted">Exploration Rate (&epsilon;)</div>
+                                        <div class="fs-4 fw-bold text-amber font-monospace" id="train-hud-epsilon">1.000</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
+                                        <div class="small text-muted">Success Rate (Window)</div>
+                                        <div class="fs-4 fw-bold text-info font-monospace" id="train-hud-success-rate">0.0%</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25">
+                                        <div class="small text-muted">Thread Status</div>
+                                        <div class="fs-5 fw-bold text-success" id="train-hud-engine">Worker Ready</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Live Mini Chart Container -->
+                            <div class="mb-3">
+                                <label class="form-label-ai mb-2">Live Convergence Curve (Reward Streaming)</label>
+                                <div style="height: 250px;">
+                                    <canvas id="chart-train-mini"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Completion Banner -->
+                            <div class="alert alert-success d-none mb-0" id="train-completed-alert">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-check-circle-fill me-1"></i> Training Finished &amp; Persisted!</h6>
+                                        <span class="small">Optimal policy extracted and saved to SQLite database.</span>
+                                    </div>
+                                    <button class="btn btn-sm btn-success" onclick="window.App.navigateTo('gridworld'); window.App.loadActivePolicyToVisualizer();">
+                                        <i class="bi bi-play-circle me-1"></i> Test in Grid World
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 PAGE 4: ALGORITHM COMPARISON
+            ========================================== -->
+            <section id="page-comparison" class="page-view">
+                <!-- Benchmark Header Bar -->
+                <div class="ai-card mb-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div>
+                            <h4 class="fw-bold text-white mb-1"><i class="bi bi-bar-chart-steps text-cyan me-2"></i>Algorithm Benchmark Comparison</h4>
+                            <p class="text-secondary small mb-0">
+                                Side-by-side empirical comparison of <strong>Q-Learning</strong>, <strong>SARSA</strong>, and <strong>Goal-Based BFS Agent</strong> executed on identical environment conditions.
+                            </p>
+                        </div>
+                        <button class="btn-ai-primary" id="btn-run-benchmark">
+                            <span class="spinner-border spinner-border-sm d-none me-1" id="benchmark-spinner"></span>
+                            <i class="bi bi-arrow-repeat me-1"></i> Run Live 3-Agent Benchmark
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3 Comparison KPI Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="stat-card" style="border-top: 3px solid var(--accent-cyan);">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge badge-rl">Off-Policy TD</span>
+                                <i class="bi bi-lightning-fill text-cyan fs-5"></i>
+                            </div>
+                            <h5 class="fw-bold text-white mb-3">Q-Learning</h5>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Avg Reward</span>
+                                <strong class="text-cyan font-monospace" id="comp-q-reward">+0.0</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Success Rate</span>
+                                <strong class="text-emerald font-monospace" id="comp-q-success">0.0%</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Avg Steps</span>
+                                <strong class="text-white font-monospace" id="comp-q-steps">0 steps</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-muted small">Convergence</span>
+                                <strong class="text-info font-monospace" id="comp-q-conv">Ep -</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="stat-card" style="border-top: 3px solid var(--accent-indigo);">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge badge-rl">On-Policy TD</span>
+                                <i class="bi bi-shield-check text-indigo fs-5"></i>
+                            </div>
+                            <h5 class="fw-bold text-white mb-3">SARSA</h5>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Avg Reward</span>
+                                <strong class="text-indigo font-monospace" id="comp-s-reward">+0.0</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Success Rate</span>
+                                <strong class="text-emerald font-monospace" id="comp-s-success">0.0%</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Avg Steps</span>
+                                <strong class="text-white font-monospace" id="comp-s-steps">0 steps</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-muted small">Convergence</span>
+                                <strong class="text-info font-monospace" id="comp-s-conv">Ep -</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="stat-card" style="border-top: 3px solid var(--accent-amber);">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge badge-baseline">Classical Search (Non-RL)</span>
+                                <i class="bi bi-geo-alt-fill text-amber fs-5"></i>
+                            </div>
+                            <h5 class="fw-bold text-white mb-3">Goal-Based Agent</h5>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Avg Reward</span>
+                                <strong class="text-amber font-monospace" id="comp-g-reward">+0.0</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Success Rate</span>
+                                <strong class="text-emerald font-monospace" id="comp-g-success">100.0%</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                <span class="text-muted small">Avg Steps</span>
+                                <strong class="text-white font-monospace" id="comp-g-steps">0 steps</strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-muted small">Convergence</span>
+                                <strong class="text-muted font-monospace" id="comp-g-conv">Instant BFS</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparative Visual Charts -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-4">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-3"><i class="bi bi-bar-chart"></i> Average Reward Comparison</div>
+                            <div style="height: 240px;"><canvas id="chart-comp-reward"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-3"><i class="bi bi-signpost-2"></i> Steps to Goal (Efficiency)</div>
+                            <div style="height: 240px;"><canvas id="chart-comp-steps"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-3"><i class="bi bi-check-circle"></i> Success Rate (%)</div>
+                            <div style="height: 240px;"><canvas id="chart-comp-success"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-3"><i class="bi bi-graph-up"></i> Learning Convergence Curves (Q-Learning vs SARSA vs Baseline)</div>
+                            <div style="height: 280px;"><canvas id="chart-comp-convergence"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Comparison Table -->
+                <div class="ai-card mb-4">
+                    <div class="ai-card-header">
+                        <div class="ai-card-title">
+                            <i class="bi bi-table"></i> Empirical Benchmark Comparison Table
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table-ai">
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%;">Evaluation Metric</th>
+                                    <th style="width: 25%;">Q-Learning (Off-Policy)</th>
+                                    <th style="width: 25%;">SARSA (On-Policy)</th>
+                                    <th style="width: 25%;">Goal-Based Agent (BFS Baseline)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparison-table-body">
+                                <tr><td colspan="4" class="text-center text-muted py-4">Loading benchmark comparison data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Academic Evaluation Commentary -->
+                <div class="ai-card">
+                    <div class="ai-card-title mb-3">
+                        <i class="bi bi-mortarboard"></i> Algorithmic Behavior Analysis &amp; Theoretical Insights
+                    </div>
+                    <div class="row g-3 text-secondary">
+                        <div class="col-md-4">
+                            <h6 class="text-cyan fw-bold">Why Q-Learning is Aggressive</h6>
+                            <p class="small mb-0">
+                                Q-Learning evaluates policy updates using the maximum potential Q-value $\max_{a'} Q(s', a')$. It assumes the agent will make optimal decisions in the future. As a result, it learns the absolute shortest path even if that path skims right alongside dangerous obstacles.
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-indigo fw-bold">Why SARSA is Conservative</h6>
+                            <p class="small mb-0">
+                                SARSA evaluates updates using the action $a'$ actually chosen by its behavior policy ($\epsilon$-greedy). Because exploratory mistakes during training result in -10 obstacle penalties, SARSA learns to steer away from obstacles, favoring a slightly longer but much safer path.
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-amber fw-bold">Role of the Goal-Based Baseline</h6>
+                            <p class="small mb-0">
+                                Breadth-First Search (BFS) is a classical graph algorithm with access to the environment's full transition matrix and obstacle map. It serves as an upper bound baseline, highlighting what perfect knowledge achieves vs what RL agents learn from scratch.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 PAGE 5: PERFORMANCE ANALYTICS
+            ========================================== -->
+            <section id="page-analytics" class="page-view">
+                <!-- Session Selector Toolbar -->
+                <div class="ai-card mb-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-pie-chart-fill text-cyan fs-4"></i>
+                            <div>
+                                <h5 class="fw-bold text-white mb-0">Interactive Performance Analytics</h5>
+                                <span class="small text-muted">Deep dive into learning curves, exploration schedules, and efficiency metrics</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="small text-muted me-1">Session:</label>
+                            <select class="form-select-ai form-select-sm" id="analytics-session-select" style="min-width: 260px;">
+                                <option value="">Current / Latest Active Run</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-info" id="btn-export-analytics">
+                                <i class="bi bi-download me-1"></i> Export JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The 6 Performance Charts Grid -->
+                <div class="row g-4">
+                    <!-- 1. Reward vs Episodes -->
+                    <div class="col-lg-6">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-2">
+                                <i class="bi bi-graph-up"></i> 1. Reward vs Episodes Graph
+                            </div>
+                            <div class="small text-muted mb-3">Episode-by-episode raw rewards displaying trial-and-error volatility.</div>
+                            <div style="height: 270px;"><canvas id="chart-analytics-reward"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Average Reward -->
+                    <div class="col-lg-6">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-2">
+                                <i class="bi bi-water"></i> 2. Average Reward Graph (Moving Average)
+                            </div>
+                            <div class="small text-muted mb-3">Smoothed moving average highlighting stability and convergence trends.</div>
+                            <div style="height: 270px;"><canvas id="chart-analytics-avg-reward"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Success Rate -->
+                    <div class="col-lg-6">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-2">
+                                <i class="bi bi-bullseye"></i> 3. Success Rate Graph (%)
+                            </div>
+                            <div class="small text-muted mb-3">Percentage of episodes successfully navigating from start to goal.</div>
+                            <div style="height: 270px;"><canvas id="chart-analytics-success"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Exploration Rate vs Episodes -->
+                    <div class="col-lg-6">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-2">
+                                <i class="bi bi-compass"></i> 4. Exploration Rate vs Episodes Graph (&epsilon; Decay)
+                            </div>
+                            <div class="small text-muted mb-3">Exponential decay schedule transitioning from exploration to exploitation.</div>
+                            <div style="height: 270px;"><canvas id="chart-analytics-epsilon"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Steps per Episode -->
+                    <div class="col-lg-6">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-2">
+                                <i class="bi bi-footprints"></i> 5. Steps per Episode Graph (Path Efficiency)
+                            </div>
+                            <div class="small text-muted mb-3">Reduction in step count showing agent learning more direct routes.</div>
+                            <div style="height: 270px;"><canvas id="chart-analytics-steps"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Head-to-Head Performance -->
+                    <div class="col-lg-6">
+                        <div class="ai-card">
+                            <div class="ai-card-title fs-6 mb-2">
+                                <i class="bi bi-intersect"></i> 6. Q-Learning vs SARSA Performance Graph
+                            </div>
+                            <div class="small text-muted mb-3">Comparative learning dynamics and relative reward stability curves.</div>
+                            <div style="height: 270px;"><canvas id="chart-analytics-head-to-head"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 PAGE 6: LEARNING THEORY
+            ========================================== -->
+            <section id="page-theory" class="page-view">
+                <div class="ai-card mb-4">
+                    <h3 class="fw-bold text-white mb-2"><i class="bi bi-book-half text-cyan me-2"></i>Reinforcement Learning Foundations &amp; Mathematical Theory</h3>
+                    <p class="text-secondary mb-0">
+                        A rigorous academic guide covering the core concepts of Sequential Decision Environments, Temporal Difference learning, Bellman optimality, and mathematical formulations.
+                    </p>
+                </div>
+
+                <!-- Theory 1-7: Fundamental RL Concepts -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="theory-card">
+                            <div class="theory-title"><i class="bi bi-lightbulb"></i> 1. What is Reinforcement Learning?</div>
+                            <p class="text-secondary">
+                                Reinforcement Learning (RL) is a paradigm of machine learning where an autonomous learner (the agent) makes sequential decisions within a dynamic environment to maximize a cumulative numerical reward signal. Unlike supervised learning, the agent is never provided correct input-output pairs or explicit supervision; instead, it must discover which actions yield the highest reward through <strong>trial-and-error exploration</strong>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="theory-card">
+                            <div class="theory-title"><i class="bi bi-robot"></i> 2. What is an Agent?</div>
+                            <p class="text-secondary">
+                                The <strong>Agent</strong> is the decision-making entity that perceives the state of the environment, executes discrete actions according to a learned policy, receives feedback in the form of rewards, and updates its internal value functions or models to improve future decision-making performance.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="theory-card">
+                            <div class="theory-title"><i class="bi bi-globe"></i> 3. What is an Environment?</div>
+                            <p class="text-secondary">
+                                The <strong>Environment</strong> represents the external world with which the agent interacts. It defines the state space, transition dynamics (physics of motion), boundaries, obstacle constraints, and reward functions. In our implementation, the 2D Grid World functions as a discrete Markov Decision Process (MDP).
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="theory-card">
+                            <div class="theory-title"><i class="bi bi-geo-alt"></i> 4. What is a State?</div>
+                            <p class="text-secondary">
+                                A <strong>State</strong> $s \in \mathcal{S}$ represents a complete specification of the agent's current situation within the environment. In the Grid World navigation task, a state is characterized by the agent's discrete coordinate location $(r, c)$, mapped to a discrete state index $s = r \times \text{cols} + c$.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="theory-card">
+                            <div class="theory-title"><i class="bi bi-arrow-repeat"></i> 5. What is an Action?</div>
+                            <p class="text-secondary">
+                                An <strong>Action</strong> $a \in \mathcal{A}$ is a permissible move chosen by the agent. In our 4-directional Grid World, the discrete action space is:
+                                <br>$\mathcal{A} = \{\text{UP (0)}, \text{DOWN (1)}, \text{LEFT (2)}, \text{RIGHT (3)}\}$.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="theory-card">
+                            <div class="theory-title"><i class="bi bi-star"></i> 6. What is a Reward?</div>
+                            <p class="text-secondary">
+                                The <strong>Reward</strong> $r_t \in \mathbb{R}$ is the immediate scalar feedback returned by the environment following action $a_t$ taken from state $s_t$:
+                                <br>&bull; Reaching the goal destination: <strong>+100.0</strong>
+                                <br>&bull; Colliding with an obstacle: <strong>-10.0</strong>
+                                <br>&bull; Standard movement cost (step penalty): <strong>-1.0</strong>
+                                <br>&bull; Invalid move (hitting boundary): <strong>-5.0</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theory 7-9: Policy & Exploration vs Exploitation -->
+                <div class="theory-card mb-4">
+                    <div class="theory-title"><i class="bi bi-shuffle"></i> 7. Policy &amp; The Exploration vs Exploitation Dilemma</div>
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <h6 class="text-cyan fw-bold">Policy &pi;(a|s)</h6>
+                            <p class="text-secondary">
+                                A <strong>Policy</strong> $\pi(a|s)$ defines the agent's way of behaving at a given time. It is a mapping from perceived states of the environment to actions to be taken. In value-based methods, the greedy policy selects the action that maximizes the learned state-action value:
+                            </p>
+                            <div class="math-formula-box text-center">
+                                $$\pi^*(s) = \arg\max_{a \in \mathcal{A}} Q(s, a)$$
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <h6 class="text-amber fw-bold">&epsilon;-Greedy Exploration Strategy</h6>
+                            <p class="text-secondary">
+                                The fundamental trade-off in reinforcement learning is between <strong>exploration</strong> (gathering information about uncharted states and actions) and <strong>exploitation</strong> (using existing knowledge to harvest maximum reward). The $\epsilon$-greedy mechanism balances both:
+                            </p>
+                            <div class="math-formula-box text-center">
+                                $$a = \begin{cases} \text{random action from } \mathcal{A} & \text{with probability } \epsilon \\ \arg\max_{a} Q(s, a) & \text{with probability } 1 - \epsilon \end{cases}$$
+                            </div>
+                            <p class="text-muted small">
+                                We apply exponential decay: $\epsilon_{t+1} = \max(\epsilon_{\min}, \epsilon_t \times \text{decay})$, ensuring high initial exploration that progressively gives way to greedy exploitation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theory 10 & 11: Q-Learning & SARSA Formulas -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="theory-card h-100" style="border-top: 3px solid var(--accent-cyan);">
+                            <span class="badge badge-rl mb-2">Watkins (1989) &bull; Model-Free Off-Policy</span>
+                            <div class="theory-title"><i class="bi bi-calculator"></i> 10. Q-Learning Algorithm</div>
+                            <p class="text-secondary">
+                                Q-Learning is an <strong>off-policy</strong> Temporal Difference (TD) control algorithm. It updates its Q-table values by assuming that the greedy, optimal action will be chosen in the next state, irrespective of the exploratory policy actually being followed:
+                            </p>
+
+                            <div class="math-formula-box">
+                                $$Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right]$$
+                            </div>
+
+                            <div class="small text-secondary">
+                                <strong>Where:</strong>
+                                <ul class="mb-0 ps-3">
+                                    <li>$Q(s, a)$: Current state-action value estimate.</li>
+                                    <li>$\alpha \in (0, 1]$: Learning rate.</li>
+                                    <li>$r$: Immediate reward received.</li>
+                                    <li>$\gamma \in [0, 1)$: Discount factor for future rewards.</li>
+                                    <li>$\max_{a'} Q(s', a')$: Bellman optimality target (best possible Q in next state $s'$).</li>
+                                    <li>$[r + \gamma \max_{a'} Q(s', a') - Q(s, a)]$: <strong>Temporal Difference (TD) Error</strong>.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="theory-card h-100" style="border-top: 3px solid var(--accent-indigo);">
+                            <span class="badge badge-rl mb-2">Rummery &amp; Niranjan (1994) &bull; Model-Free On-Policy</span>
+                            <div class="theory-title"><i class="bi bi-calculator"></i> 11. SARSA Algorithm</div>
+                            <p class="text-secondary">
+                                SARSA (State-Action-Reward-State-Action) is an <strong>on-policy</strong> TD control algorithm. Rather than estimating the optimal policy directly, it updates Q-values based on the action $a'$ actually selected by the current behavioral ($\epsilon$-greedy) policy:
+                            </p>
+
+                            <div class="math-formula-box">
+                                $$Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma Q(s', a') - Q(s, a) \right]$$
+                            </div>
+
+                            <div class="small text-secondary">
+                                <strong>Where:</strong>
+                                <ul class="mb-0 ps-3">
+                                    <li>$Q(s, a)$: Current state-action value.</li>
+                                    <li>$a'$: Next action chosen from state $s'$ using current $\epsilon$-greedy policy.</li>
+                                    <li>$Q(s', a')$: On-policy target value.</li>
+                                    <li>Because $a'$ may be an exploratory action that hits an obstacle, SARSA penalizes states with neighboring hazards during learning.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theory: Comparison Summary Table -->
+                <div class="theory-card">
+                    <div class="theory-title"><i class="bi bi-intersect"></i> Q-Learning vs SARSA: Architectural Comparison</div>
+                    <div class="table-responsive">
+                        <table class="table-ai">
+                            <thead>
+                                <tr>
+                                    <th>Dimension</th>
+                                    <th>Q-Learning</th>
+                                    <th>SARSA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold">Policy Category</td>
+                                    <td class="text-cyan">Off-Policy (Evaluates Target Policy $\ne$ Behavior Policy)</td>
+                                    <td class="text-indigo">On-Policy (Evaluates Target Policy $=$ Behavior Policy)</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Update Target</td>
+                                    <td>$r + \gamma \max_{a'} Q(s', a')$</td>
+                                    <td>$r + \gamma Q(s', a')$</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Target Action $a'$ Selection</td>
+                                    <td>Strictly greedy max action</td>
+                                    <td>Action chosen by current $\epsilon$-greedy policy</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Risk Tendency Near Obstacles</td>
+                                    <td>Learns shortest optimal route, walks right along cliffs/walls</td>
+                                    <td>Learns safer conservative route with hazard buffers</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Convergence Guarantee</td>
+                                    <td>Converges to optimal $Q^*(s, a)$ with sufficient exploration</td>
+                                    <td>Converges to optimal policy under GLIE (Greedy in the Limit with Infinite Exploration)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 PAGE 7: ABOUT PROJECT
+            ========================================== -->
+            <section id="page-about" class="page-view">
+                <div class="ai-card mb-4">
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-9">
+                            <span class="badge bg-primary bg-opacity-25 text-info border border-info mb-2">College Project Documentation</span>
+                            <h2 class="fw-bold text-white mb-2">Reinforcement Learning Agent for Sequential Decision Environments</h2>
+                            <p class="text-secondary mb-0">
+                                <strong>Academic Domain:</strong> Artificial Intelligence and Machine Learning &bull; Sequential Decision Making &bull; Markov Decision Processes
+                            </p>
+                        </div>
+                        <div class="col-md-3 text-md-end">
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success p-2">Status: Fully Functional</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Project Details -->
+                    <div class="col-lg-8">
+                        <div class="ai-card mb-4">
+                            <div class="ai-card-title mb-3"><i class="bi bi-bullseye"></i> 1. Problem Statement</div>
+                            <p class="text-secondary">
+                                Autonomous agents operating in sequential decision-making environments face the challenge of reaching target destinations without prior knowledge of the environment's transition dynamics or obstacle locations. Traditional rule-based systems and classical graph-search algorithms require complete, deterministic models of the environment beforehand. In contrast, this project investigates how model-free Reinforcement Learning algorithms can learn optimal navigational policies purely through repeated trial-and-error environmental interactions while balancing the exploration-exploitation dilemma.
+                            </p>
+                        </div>
+
+                        <div class="ai-card mb-4">
+                            <div class="ai-card-title mb-3"><i class="bi bi-flag"></i> 2. Project Objectives</div>
+                            <ul class="text-secondary mb-0 ps-3">
+                                <li class="mb-2">Implement pure mathematical implementations of <strong>Q-Learning</strong> (Off-Policy TD) and <strong>SARSA</strong> (On-Policy TD) without relying on high-level black-box RL libraries.</li>
+                                <li class="mb-2">Construct a configurable 2D <strong>Grid World navigation environment</strong> with user-customizable obstacle layouts, start/goal coordinates, and customizable reward structures.</li>
+                                <li class="mb-2">Develop a deterministic <strong>Goal-Based Agent</strong> baseline using Breadth-First Search (BFS) to provide a theoretical benchmark.</li>
+                                <li class="mb-2">Provide interactive real-time training controls with live telemetry (episodes, reward convergence, $\epsilon$ decay, success rates).</li>
+                                <li class="mb-2">Deliver interactive visualizations including learned policy direction arrows (&uarr;, &darr;, &larr;, &rarr;), state-value heatmaps, and step-by-step path playback.</li>
+                                <li>Enable rigorous side-by-side empirical performance evaluations and persist all historical training sessions into an SQLite database.</li>
+                            </ul>
+                        </div>
+
+                        <div class="ai-card mb-4">
+                            <div class="ai-card-title mb-3"><i class="bi bi-diagram-3"></i> 3. Proposed Methodology &amp; System Architecture</div>
+                            <p class="text-secondary mb-3">
+                                The system is architected as a full-stack, modular web application:
+                            </p>
+                            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 font-monospace small text-cyan mb-3">
+                                Browser UI (Bootstrap 5 + Chart.js + Grid Canvas)<br>
+                                &nbsp;&nbsp;&nbsp;&uarr;&darr; JSON REST API / Polling / State Sync<br>
+                                Flask Web Framework Backend (`app.py`)<br>
+                                &nbsp;&nbsp;&nbsp;&uarr;&darr;<br>
+                                [Environment] &harr; [Training Manager (Threaded)] &harr; [Evaluation Engine]<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;<br>
+                                [Q-Learning Agent | SARSA Agent | Goal-Based BFS Agent] &harr; [SQLite Database]
+                            </div>
+                        </div>
+
+                        <div class="ai-card">
+                            <div class="ai-card-title mb-3"><i class="bi bi-check2-circle"></i> 4. Expected Outcomes &amp; Findings</div>
+                            <p class="text-secondary mb-2">
+                                &bull; <strong>Convergence:</strong> Both Q-Learning and SARSA successfully converge to stable, obstacle-free paths across diverse maze presets within 300&ndash;500 episodes.
+                            </p>
+                            <p class="text-secondary mb-2">
+                                &bull; <strong>Path Variance:</strong> Q-Learning consistently converges on the shortest possible path alongside obstacles (identical in length to the BFS baseline), whereas SARSA frequently chooses safer detours with greater clearance around collision zones.
+                            </p>
+                            <p class="text-secondary mb-0">
+                                &bull; <strong>Exploration Stability:</strong> Demonstrating how exponential decay of $\epsilon$ drives initial wide-range map exploration while enabling final deterministic policy exploitation.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tech Stack & Credits Column -->
+                    <div class="col-lg-4">
+                        <div class="ai-card mb-4">
+                            <div class="ai-card-title mb-3"><i class="bi bi-code-slash"></i> Technology Stack</div>
+                            <div class="d-flex flex-column gap-2 small">
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">Backend Framework</span>
+                                    <strong class="text-cyan">Python Flask</strong>
+                                </div>
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">Mathematical Computations</span>
+                                    <strong class="text-cyan">NumPy</strong>
+                                </div>
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">Data Persistence</span>
+                                    <strong class="text-cyan">SQLite 3</strong>
+                                </div>
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">Frontend Styling</span>
+                                    <strong class="text-info">Bootstrap 5 + CSS3</strong>
+                                </div>
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">Data Visualizations</span>
+                                    <strong class="text-info">Chart.js 4.4</strong>
+                                </div>
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">Interactive Grid</span>
+                                    <strong class="text-info">Pure JavaScript ES6+</strong>
+                                </div>
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">Math Rendering</span>
+                                    <strong class="text-info">KaTeX Library</strong>
+                                </div>
+                                <div class="d-flex justify-content-between p-2 rounded bg-dark">
+                                    <span class="text-muted">API Architecture</span>
+                                    <strong class="text-info">RESTful JSON API</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ai-card">
+                            <div class="ai-card-title mb-3"><i class="bi bi-person-badge"></i> Academic Submission</div>
+                            <div class="small text-secondary">
+                                <p class="mb-2"><strong>Course:</strong> Artificial Intelligence Foundations</p>
+                                <p class="mb-2"><strong>Focus:</strong> Sequential Decision Making &amp; Reinforcement Learning</p>
+                                <p class="mb-2"><strong>Demonstration:</strong> Multi-Agent Grid World Navigation</p>
+                                <p class="mb-0"><strong>Year:</strong> 2026 Academic Session</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js 4.4 JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- KaTeX JS for LaTeX math rendering -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<!-- Application Scripts -->
+<script src="/static/js/gridworld.js"></script>
+<script src="/static/js/charts.js"></script>
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>
