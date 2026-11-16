@@ -61,14 +61,22 @@ class GridWorldVisualizer {
     setEnvironmentData(data) {
         this.rows = data.rows || 10;
         this.cols = data.cols || 10;
-        this.start = data.start || [0, 0];
-        this.goal = data.goal || [this.rows - 1, this.cols - 1];
+        this.start = data.start ? [Number(data.start[0]), Number(data.start[1])] : [0, 0];
+        this.goal = data.goal ? [Number(data.goal[0]), Number(data.goal[1])] : [this.rows - 1, this.cols - 1];
         this.obstacles = new Set((data.obstacles || []).map(o => `${o[0]},${o[1]}`));
+        
+        // Synchronize agent position to the new start position
         this.agentPos = [...this.start];
         this.accumulatedReward = 0.0;
         this.currentStepIndex = 0;
+        
+        // Invalidate outdated paths and policy overlays from previous environment layout
+        this.currentPath = [];
+        this.currentActions = [];
+        this.policyData = null;
+        
         this.render();
-        this.updateHUD();
+        this.updateHUD(`Ready at Start (${this.start[0]}, ${this.start[1]}). Goal is (${this.goal[0]}, ${this.goal[1]}).`);
     }
 
     setInteractionMode(mode) {
@@ -212,10 +220,19 @@ class GridWorldVisualizer {
     }
 
     async handleCellClick(r, c) {
+        const isStart = (r === this.start[0] && c === this.start[1]);
+        const isGoal = (r === this.goal[0] && c === this.goal[1]);
+        const isObs = this.obstacles.has(`${r},${c}`);
+
         if (this.interactionMode === 'toggle_obstacle') {
-            if ((r === this.start[0] && c === this.start[1]) || (r === this.goal[0] && c === this.goal[1])) {
+            if (isStart || isGoal) {
+                this.updateHUD('Cannot place obstacle on Start or Goal cell.');
                 return;
             }
+            this.pauseSimulation();
+            this.currentPath = [];
+            this.currentActions = [];
+            this.currentStepIndex = 0;
             try {
                 const res = await fetch('/api/environment/update', {
                     method: 'POST',
@@ -225,19 +242,49 @@ class GridWorldVisualizer {
                 const data = await res.json();
                 if (data.status === 'success') {
                     this.setEnvironmentData(data.environment);
+                    await this.loadAgentSimulation('current');
                 }
             } catch (err) {
                 console.error('[GridWorld] Error toggling obstacle:', err);
+                this.updateHUD('Error updating obstacle.');
             }
         } else if (this.interactionMode === 'set_start') {
-            if (this.obstacles.has(`${r},${c}`) || (r === this.goal[0] && c === this.goal[1])) return;
+            if (isObs) {
+                this.updateHUD('Invalid start: Cannot place start on an obstacle cell.');
+                return;
+            }
+            if (isGoal) {
+                this.updateHUD('Invalid start: Start position cannot be the Goal cell.');
+                return;
+            }
+            this.pauseSimulation();
             this.start = [r, c];
             this.agentPos = [r, c];
+            this.currentPath = [];
+            this.currentActions = [];
+            this.currentStepIndex = 0;
+            this.accumulatedReward = 0.0;
+            this.render(); // Immediate visual START marker update
             await this.updateEnvironmentLayout();
+            await this.loadAgentSimulation('current');
         } else if (this.interactionMode === 'set_goal') {
-            if (this.obstacles.has(`${r},${c}`) || (r === this.start[0] && c === this.start[1])) return;
+            if (isObs) {
+                this.updateHUD('Invalid goal: Cannot place goal on an obstacle cell.');
+                return;
+            }
+            if (isStart) {
+                this.updateHUD('Invalid goal: Goal position cannot be the Start cell.');
+                return;
+            }
+            this.pauseSimulation();
             this.goal = [r, c];
+            this.currentPath = [];
+            this.currentActions = [];
+            this.currentStepIndex = 0;
+            this.accumulatedReward = 0.0;
+            this.render(); // Immediate visual GOAL marker update
             await this.updateEnvironmentLayout();
+            await this.loadAgentSimulation('current');
         }
     }
 
@@ -269,6 +316,9 @@ class GridWorldVisualizer {
 
     async resetToPreset(presetName = 'default') {
         this.pauseSimulation();
+        this.currentPath = [];
+        this.currentActions = [];
+        this.currentStepIndex = 0;
         try {
             const res = await fetch('/api/environment/reset', {
                 method: 'POST',
@@ -278,9 +328,11 @@ class GridWorldVisualizer {
             const data = await res.json();
             if (data.status === 'success') {
                 this.setEnvironmentData(data.environment);
+                await this.loadAgentSimulation('current');
             }
         } catch (err) {
             console.error('[GridWorld] Reset preset error:', err);
+            this.updateHUD('Error resetting preset layout.');
         }
     }
 
@@ -312,14 +364,24 @@ class GridWorldVisualizer {
                 this.agentPos = [...this.currentPath[0]];
                 this.accumulatedReward = 0.0;
                 this.render();
-                this.updateHUD('Simulation trajectory loaded. Click Start.');
+
+                if (data.success) {
+                    this.updateHUD(`Trajectory ready (${data.steps} steps to goal). Click Start Simulation.`);
+                } else if (data.status_detail === 'No Valid Path' || (data.path.length <= 1 && !data.success)) {
+                    this.updateHUD('No Valid Path: Goal is blocked by obstacles.');
+                } else {
+                    this.updateHUD(`Trajectory loaded (${data.status_detail || 'Goal not reachable'}). Click Start.`);
+                }
                 return data;
             } else {
-                this.updateHUD('No valid path found for agent.');
+                this.currentPath = [];
+                this.currentActions = [];
+                this.updateHUD('No Valid Path: Unable to compute route.');
                 return null;
             }
         } catch (err) {
             console.error('[GridWorld] Simulation error:', err);
+            this.updateHUD('Simulation Error: Failed to reach backend.');
             return null;
         }
     }
@@ -327,7 +389,11 @@ class GridWorldVisualizer {
     startSimulation() {
         if (!this.currentPath || this.currentPath.length <= 1) {
             this.loadAgentSimulation('current').then(data => {
-                if (data) this.startSimulation();
+                if (data && data.path && data.path.length > 1) {
+                    this.startSimulation();
+                } else {
+                    this.updateHUD('No Valid Path: Agent cannot reach goal.');
+                }
             });
             return;
         }
@@ -347,19 +413,26 @@ class GridWorldVisualizer {
     }
 
     pauseSimulation() {
+        const wasPlaying = this.isPlaying;
         this.isPlaying = false;
         clearInterval(this.animationTimer);
-        this.updateHUD('Simulation paused');
+        const reachedGoal = (this.agentPos[0] === this.goal[0] && this.agentPos[1] === this.goal[1]);
+        if (wasPlaying && !reachedGoal && this.currentStepIndex > 0) {
+            this.updateHUD('Simulation Stopped');
+        }
     }
 
     stepForward() {
+        if (!this.currentPath || this.currentPath.length === 0) {
+            this.loadAgentSimulation('current');
+            return;
+        }
+
         if (this.currentStepIndex < this.currentPath.length - 1) {
             this.currentStepIndex++;
             this.agentPos = [...this.currentPath[this.currentStepIndex]];
 
             const isGoal = (this.agentPos[0] === this.goal[0] && this.agentPos[1] === this.goal[1]);
-            const prevPos = this.currentPath[this.currentStepIndex - 1];
-            // Reward calculation
             if (isGoal) {
                 this.accumulatedReward += 100.0;
             } else {
@@ -368,15 +441,25 @@ class GridWorldVisualizer {
 
             this.render();
 
-            let statusMsg = 'Navigating...';
             if (isGoal) {
-                statusMsg = '🎉 Goal Reached! (+100)';
                 this.pauseSimulation();
+                this.updateHUD('Goal Reached! (+100)');
+            } else {
+                this.updateHUD(`Navigating... (Step ${this.currentStepIndex}/${this.currentPath.length - 1})`);
             }
-            this.updateHUD(statusMsg);
         } else {
+            // Path has reached the end of available trajectory
             this.pauseSimulation();
-            this.updateHUD('Path completed');
+            const reachedGoal = (this.agentPos[0] === this.goal[0] && this.agentPos[1] === this.goal[1]);
+            if (reachedGoal) {
+                this.updateHUD('Goal Reached');
+            } else if (this.currentStepIndex >= 50 || this.currentPath.length >= 50) {
+                this.updateHUD('Maximum Steps Reached');
+            } else if (this.currentPath.length <= 1) {
+                this.updateHUD('No Valid Path');
+            } else {
+                this.updateHUD('Simulation Stopped');
+            }
         }
     }
 
@@ -386,7 +469,7 @@ class GridWorldVisualizer {
         this.agentPos = [...this.start];
         this.accumulatedReward = 0.0;
         this.render();
-        this.updateHUD('Reset to start position');
+        this.updateHUD(`Simulation Reset: Ready at Start position (${this.start[0]}, ${this.start[1]})`);
     }
 
     updateHUD(statusOverride = null) {
@@ -408,7 +491,7 @@ class GridWorldVisualizer {
             let msg = statusOverride;
             if (!msg) {
                 if (this.agentPos[0] === this.goal[0] && this.agentPos[1] === this.goal[1]) {
-                    msg = '🎉 Goal Reached!';
+                    msg = 'Goal Reached';
                 } else if (this.isPlaying) {
                     msg = 'Navigating...';
                 } else {
@@ -416,6 +499,16 @@ class GridWorldVisualizer {
                 }
             }
             this.hud.status.innerText = msg;
+            // Status-specific styling
+            if (msg.includes('Goal Reached')) {
+                this.hud.status.className = 'hud-value text-emerald fs-6';
+            } else if (msg.includes('Maximum Steps') || msg.includes('No Valid Path')) {
+                this.hud.status.className = 'hud-value text-danger fs-6';
+            } else if (msg.includes('Stopped') || msg.includes('Paused')) {
+                this.hud.status.className = 'hud-value text-warning fs-6';
+            } else {
+                this.hud.status.className = 'hud-value text-info fs-6';
+            }
         }
     }
 }

@@ -19,7 +19,10 @@ from backend.database import (
     get_all_training_sessions,
     get_session_by_id,
     save_comparison_benchmark,
-    get_latest_comparison
+    get_latest_comparison,
+    save_simulation_run,
+    get_simulation_history,
+    get_simulation_stats
 )
 
 # Initialize Flask App with custom folder paths
@@ -69,11 +72,18 @@ def health_check():
 
 @app.route("/api/dashboard", methods=["GET"])
 def get_dashboard():
-    """Summary metrics for the landing dashboard."""
+    """Summary metrics for the landing dashboard, combining training and simulation telemetry."""
     try:
-        past_sessions = get_all_training_sessions(limit=10)
+        past_sessions = get_all_training_sessions(limit=15)
     except Exception:
         past_sessions = []
+
+    try:
+        past_simulations = get_simulation_history(limit=15)
+        sim_stats = get_simulation_stats()
+    except Exception:
+        past_simulations = []
+        sim_stats = {"total_simulations": 0, "successful_simulations": 0, "success_rate": 0.0, "avg_reward": 0.0}
 
     total_episodes_all_time = sum(s.get("episodes", 0) for s in past_sessions)
     total_successful_runs = sum(1 for s in past_sessions if (s.get("success_rate") or 0) > 80.0)
@@ -84,6 +94,8 @@ def get_dashboard():
     curr_algo = "Q-Learning"
     if training_mgr.current_agent:
         curr_algo = training_mgr.current_agent.algorithm_name
+    elif past_simulations:
+        curr_algo = past_simulations[0].get("algorithm", "Q-Learning")
     elif past_sessions:
         curr_algo = past_sessions[0].get("algorithm", "Q-Learning")
 
@@ -93,17 +105,24 @@ def get_dashboard():
     if avg_reward == 0.0 and past_sessions:
         avg_reward = round(sum(s.get("avg_reward", 0.0) for s in past_sessions) / len(past_sessions), 2)
         success_rate = round(sum(s.get("success_rate", 0.0) for s in past_sessions) / len(past_sessions), 1)
+    elif avg_reward == 0.0 and past_simulations:
+        avg_reward = sim_stats.get("avg_reward", 0.0)
+        success_rate = sim_stats.get("success_rate", 0.0)
 
     return jsonify({
         "title": "Reinforcement Learning Agent for Sequential Decision Environments",
         "domain": "Artificial Intelligence & Reinforcement Learning",
         "total_episodes": total_episodes_all_time or current_status.get("current_episode", 0),
+        "total_simulations": sim_stats.get("total_simulations", 0),
         "current_algorithm": curr_algo,
         "average_reward": avg_reward,
         "success_rate": success_rate,
         "successful_episodes": total_successful_runs,
+        "successful_simulations": sim_stats.get("successful_simulations", 0),
         "environment": global_env.to_dict(),
         "recent_sessions": past_sessions[:5],
+        "recent_simulations": past_simulations[:10],
+        "simulation_stats": sim_stats,
         "training_status": current_status.get("status", "idle")
     })
 
@@ -130,6 +149,8 @@ def reset_environment():
         goal_pos=[rows - 1, cols - 1],
         obstacles=raw_obs
     )
+    training_mgr.latest_optimal_path = []
+    training_mgr.evaluation_result = None
     return jsonify({
         "status": "success",
         "message": f"Environment reset with preset '{preset}'",
@@ -146,6 +167,8 @@ def update_environment():
     if "toggle_obstacle" in data:
         r, c = data["toggle_obstacle"]
         is_now_obstacle = global_env.toggle_obstacle(r, c)
+        training_mgr.latest_optimal_path = []
+        training_mgr.evaluation_result = None
         return jsonify({
             "status": "success",
             "toggled": [r, c],
@@ -166,6 +189,8 @@ def update_environment():
         goal_pos=goal,
         obstacles=obstacles
     )
+    training_mgr.latest_optimal_path = []
+    training_mgr.evaluation_result = None
 
     return jsonify({
         "status": "success",
@@ -412,7 +437,8 @@ def get_analytics():
 def simulate_agent():
     """
     Simulate step-by-step navigation of a selected agent on the current grid.
-    Returns the exact trajectory for the frontend animated player.
+    Accurately classifies outcomes (Goal Reached, Maximum Steps Reached, No Valid Path).
+    Persists simulation executions to SQLite simulation_history.
     """
     data = request.get_json(silent=True) or {}
     algo = data.get("algorithm", "current").lower()
@@ -431,29 +457,103 @@ def simulate_agent():
 
     if isinstance(agent, GoalBasedAgent):
         res = agent.solve_path(global_env)
+        success = bool(res.get("success", False))
+        steps = int(res.get("steps", 0))
+        total_reward = float(res.get("total_reward", 0.0))
+        path = res.get("path", [])
+        actions = res.get("actions", [])
+
+        if success:
+            status_detail = "Goal Reached"
+        elif res.get("error") or len(path) <= 1:
+            status_detail = "No Valid Path"
+        elif steps >= max_steps:
+            status_detail = "Maximum Steps Reached"
+        else:
+            status_detail = "Path Not Found"
+
+        # Persist simulation run to database
+        sim_record = {
+            "algorithm": agent.algorithm_name,
+            "start": list(global_env.start_pos),
+            "goal": list(global_env.goal_pos),
+            "steps": steps,
+            "total_reward": total_reward,
+            "success": success,
+            "path": path,
+            "status": status_detail
+        }
+        try:
+            save_simulation_run(sim_record)
+        except Exception as ex:
+            print(f"[Simulate] Warning: could not persist simulation: {ex}")
+
         return jsonify({
             "status": "success",
             "algorithm": agent.algorithm_name,
             "is_baseline": True,
-            "path": res["path"],
-            "actions": res["actions"],
-            "steps": res["steps"],
-            "total_reward": res["total_reward"],
-            "success": res["success"]
+            "path": path,
+            "actions": actions,
+            "steps": steps,
+            "total_reward": total_reward,
+            "success": success,
+            "status_detail": status_detail,
+            "error": res.get("error")
         })
 
     # RL agent execution
     path_res = agent.extract_optimal_path(global_env, max_steps=max_steps)
+    success = bool(path_res.get("success", False))
+    steps = int(path_res.get("steps", 0))
+    total_reward = float(path_res.get("total_reward", 0.0))
+    path = path_res.get("path", [])
+    actions = path_res.get("actions", [])
+
+    if success:
+        status_detail = "Goal Reached"
+    elif steps >= max_steps:
+        status_detail = "Maximum Steps Reached"
+    elif len(path) <= 1:
+        status_detail = "No Valid Path"
+    else:
+        status_detail = "Maximum Steps Reached"
+
+    # Persist simulation run to database
+    sim_record = {
+        "algorithm": agent.algorithm_name,
+        "start": list(global_env.start_pos),
+        "goal": list(global_env.goal_pos),
+        "steps": steps,
+        "total_reward": total_reward,
+        "success": success,
+        "path": path,
+        "status": status_detail
+    }
+    try:
+        save_simulation_run(sim_record)
+    except Exception as ex:
+        print(f"[Simulate] Warning: could not persist simulation: {ex}")
+
     return jsonify({
         "status": "success",
         "algorithm": agent.algorithm_name,
         "is_baseline": False,
-        "path": path_res["path"],
-        "actions": path_res["actions"],
-        "steps": path_res["steps"],
-        "total_reward": path_res["total_reward"],
-        "success": path_res["success"]
+        "path": path,
+        "actions": actions,
+        "steps": steps,
+        "total_reward": total_reward,
+        "success": success,
+        "status_detail": status_detail
     })
+
+
+@app.route("/api/simulations", methods=["GET"])
+def get_simulations():
+    """List recent simulation history runs and aggregate metrics."""
+    limit = request.args.get("limit", default=25, type=int)
+    sims = get_simulation_history(limit=limit)
+    stats = get_simulation_stats()
+    return jsonify({"status": "success", "simulations": sims, "stats": stats})
 
 
 @app.route("/api/history", methods=["GET"])
@@ -477,5 +577,6 @@ if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() in ("true", "1")
-    print(f"Starting Reinforcement Learning Agent Web Application on http://0.0.0.0:{port}")
-    app.run(host="0.0.0.0", port=port, debug=debug_mode)
+    print(f"Starting Reinforcement Learning Agent Web Application on http://127.0.0.1:{port}")
+    print(f"Open in your browser: http://localhost:{port} or http://127.0.0.1:{port}")
+    app.run(host="0.0.0.0", port=port, debug=debug_mode, threaded=True)

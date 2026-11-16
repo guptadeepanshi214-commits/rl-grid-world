@@ -13,6 +13,8 @@ class RLApp {
         this.selectedAlgorithm = 'q_learning';
         this.trainingPollTimer = null;
         this.gridVisualizer = null;
+        this.dashboardTab = 'training';
+        this.cachedDashboardData = null;
 
         this.init();
     }
@@ -103,19 +105,30 @@ class RLApp {
     // Page 1: Dashboard Controller
     // ==========================================
     async loadDashboardData() {
-        try {
-            const res = await fetch('/api/dashboard');
-            if (!res.ok) throw new Error('Failed to fetch dashboard');
-            const data = await res.json();
+        const iconRefresh = document.getElementById('icon-refresh-dashboard');
+        const alertBox = document.getElementById('dash-refresh-alert');
+        const successBox = document.getElementById('dash-refresh-success');
 
-            // Populate KPIs
+        if (iconRefresh) iconRefresh.classList.add('bi-spin');
+        if (alertBox) alertBox.classList.add('d-none');
+        if (successBox) successBox.classList.add('d-none');
+
+        try {
+            // Cache-busting URL to always retrieve fresh database telemetry
+            const res = await fetch(`/api/dashboard?t=${Date.now()}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch dashboard statistics`);
+            const data = await res.json();
+            this.cachedDashboardData = data;
+
+            // Populate KPI Metric Cards
             const elTotalEp = document.getElementById('dash-total-episodes');
             const elAlgo = document.getElementById('dash-current-algo');
             const elAvgRew = document.getElementById('dash-avg-reward');
             const elSuccRate = document.getElementById('dash-success-rate');
             const elSuccEp = document.getElementById('dash-successful-episodes');
 
-            if (elTotalEp) elTotalEp.innerText = Number(data.total_episodes || 0).toLocaleString();
+            const totalActivity = (data.total_episodes || 0) + (data.total_simulations || 0);
+            if (elTotalEp) elTotalEp.innerText = Number(totalActivity).toLocaleString();
             if (elAlgo) elAlgo.innerText = data.current_algorithm || 'Q-Learning';
             if (elAvgRew) {
                 const rew = Number(data.average_reward || 0);
@@ -123,12 +136,83 @@ class RLApp {
                 elAvgRew.style.color = rew >= 0 ? '#10b981' : '#f87171';
             }
             if (elSuccRate) elSuccRate.innerText = `${(data.success_rate || 0).toFixed(1)}%`;
-            if (elSuccEp) elSuccEp.innerText = data.successful_episodes || 0;
+            if (elSuccEp) {
+                const totalSucc = (data.successful_episodes || 0) + (data.successful_simulations || 0);
+                elSuccEp.innerText = totalSucc;
+            }
 
-            // Populate recent sessions table
-            this.renderDashboardSessions(data.recent_sessions || []);
+            // Render active table tab (Training Sessions or Simulation Runs)
+            this.renderDashboardTable();
+
+            // Display non-intrusive refresh success indicator
+            if (successBox) {
+                successBox.classList.remove('d-none');
+                setTimeout(() => { if (successBox) successBox.classList.add('d-none'); }, 2500);
+            }
         } catch (err) {
-            console.error('[Dashboard] Error:', err);
+            console.error('[Dashboard] Error refreshing dashboard:', err);
+            if (alertBox) {
+                alertBox.innerText = `Failed to refresh dashboard: ${err.message}. Please verify the Flask backend server is running.`;
+                alertBox.classList.remove('d-none');
+            }
+        } finally {
+            if (iconRefresh) {
+                setTimeout(() => iconRefresh.classList.remove('bi-spin'), 400);
+            }
+        }
+    }
+
+    switchDashboardTab(tabName) {
+        this.dashboardTab = tabName;
+
+        const btnTraining = document.getElementById('tab-show-training');
+        const btnSimulations = document.getElementById('tab-show-simulations');
+        const titleSpan = document.getElementById('dash-history-card-title');
+
+        if (tabName === 'training') {
+            if (btnTraining) btnTraining.classList.add('active');
+            if (btnSimulations) btnSimulations.classList.remove('active');
+            if (titleSpan) titleSpan.innerText = 'Recent Training Sessions (SQLite History)';
+        } else {
+            if (btnSimulations) btnSimulations.classList.add('active');
+            if (btnTraining) btnTraining.classList.remove('active');
+            if (titleSpan) titleSpan.innerText = 'Recent Simulation Runs (SQLite History)';
+        }
+
+        this.renderDashboardTable();
+    }
+
+    renderDashboardTable() {
+        const thead = document.getElementById('dash-table-head');
+        const tbody = document.getElementById('dash-recent-sessions-body');
+        if (!tbody) return;
+
+        if (this.dashboardTab === 'simulations') {
+            if (thead) {
+                thead.innerHTML = `
+                    <th>Algorithm</th>
+                    <th>Start &rarr; Goal</th>
+                    <th>Steps</th>
+                    <th>Total Reward</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                `;
+            }
+            this.renderDashboardSimulations(this.cachedDashboardData?.recent_simulations || []);
+        } else {
+            if (thead) {
+                thead.innerHTML = `
+                    <th>Algorithm</th>
+                    <th>Episodes</th>
+                    <th>Avg Reward</th>
+                    <th>Success Rate</th>
+                    <th>Avg Steps</th>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                `;
+            }
+            this.renderDashboardSessions(this.cachedDashboardData?.recent_sessions || []);
         }
     }
 
@@ -136,8 +220,8 @@ class RLApp {
         const tbody = document.getElementById('dash-recent-sessions-body');
         if (!tbody) return;
 
-        if (sessions.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No completed training sessions recorded yet. Run a training session to see records here.</td></tr>`;
+        if (!sessions || sessions.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No completed training sessions recorded yet. Run a training session in the Train Agent tab.</td></tr>`;
             return;
         }
 
@@ -145,9 +229,9 @@ class RLApp {
             <tr>
                 <td><span class="badge ${s.algorithm.includes('SARSA') ? 'badge-rl' : s.algorithm.includes('Q-Learning') ? 'badge-rl' : 'badge-baseline'}">${s.algorithm}</span></td>
                 <td><strong>${s.episodes}</strong></td>
-                <td style="color: ${s.avg_reward >= 0 ? '#10b981' : '#f87171'}">${s.avg_reward ? (s.avg_reward > 0 ? '+' : '') + s.avg_reward.toFixed(1) : '0.0'}</td>
+                <td style="color: ${s.avg_reward >= 0 ? '#10b981' : '#f87171'}">${s.avg_reward ? (s.avg_reward > 0 ? '+' : '') + Number(s.avg_reward).toFixed(1) : '0.0'}</td>
                 <td><span class="text-emerald font-monospace">${(s.success_rate || 0).toFixed(1)}%</span></td>
-                <td>${s.avg_steps ? s.avg_steps.toFixed(1) : '-'}</td>
+                <td>${s.avg_steps ? Number(s.avg_steps).toFixed(1) : '-'}</td>
                 <td class="text-muted small">${s.timestamp || '-'}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-info py-0 px-2" onclick="window.App.loadSessionToVisualizer(${s.id})">
@@ -156,6 +240,67 @@ class RLApp {
                 </td>
             </tr>
         `).join('');
+    }
+
+    renderDashboardSimulations(simulations) {
+        const tbody = document.getElementById('dash-recent-sessions-body');
+        if (!tbody) return;
+
+        if (!simulations || simulations.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No simulation runs recorded yet. Test robot navigation in the Grid World Environment tab.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = simulations.map((s, idx) => {
+            const startStr = Array.isArray(s.start_pos) ? `(${s.start_pos[0]}, ${s.start_pos[1]})` : `${s.start_pos}`;
+            const goalStr = Array.isArray(s.goal_pos) ? `(${s.goal_pos[0]}, ${s.goal_pos[1]})` : `${s.goal_pos}`;
+
+            let statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+            if (s.status === 'Goal Reached' || s.success === 1 || s.success === true) {
+                statusBadge = '<span class="badge bg-success bg-opacity-25 text-emerald border border-success border-opacity-50"><i class="bi bi-check-circle me-1"></i>Goal Reached</span>';
+            } else if (s.status === 'Maximum Steps Reached') {
+                statusBadge = '<span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50"><i class="bi bi-exclamation-triangle me-1"></i>Max Steps</span>';
+            } else if (s.status === 'No Valid Path') {
+                statusBadge = '<span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50"><i class="bi bi-slash-circle me-1"></i>No Path</span>';
+            } else {
+                statusBadge = `<span class="badge bg-secondary">${s.status || 'Finished'}</span>`;
+            }
+
+            return `
+            <tr>
+                <td><span class="badge ${s.algorithm.includes('SARSA') ? 'badge-rl' : s.algorithm.includes('Q-Learning') ? 'badge-rl' : 'badge-baseline'}">${s.algorithm}</span></td>
+                <td><span class="font-monospace small text-cyan">${startStr} &rarr; ${goalStr}</span></td>
+                <td><strong>${s.steps}</strong></td>
+                <td style="color: ${s.total_reward >= 0 ? '#10b981' : '#f87171'}">${s.total_reward > 0 ? '+' : ''}${Number(s.total_reward || 0).toFixed(1)}</td>
+                <td>${statusBadge}</td>
+                <td class="text-muted small">${s.timestamp || '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info py-0 px-2" onclick="window.App.loadSimulationRunToVisualizer(${idx})">
+                        <i class="bi bi-eye me-1"></i>View
+                    </button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    loadSimulationRunToVisualizer(simIndex) {
+        if (!this.cachedDashboardData || !this.cachedDashboardData.recent_simulations) return;
+        const sim = this.cachedDashboardData.recent_simulations[simIndex];
+        if (!sim || !sim.path || sim.path.length === 0) return;
+
+        this.navigateTo('gridworld');
+        if (this.gridVisualizer) {
+            this.gridVisualizer.pauseSimulation();
+            if (Array.isArray(sim.start_pos)) this.gridVisualizer.start = [...sim.start_pos];
+            if (Array.isArray(sim.goal_pos)) this.gridVisualizer.goal = [...sim.goal_pos];
+            this.gridVisualizer.currentPath = sim.path;
+            this.gridVisualizer.currentStepIndex = 0;
+            this.gridVisualizer.agentPos = [...sim.path[0]];
+            this.gridVisualizer.accumulatedReward = 0.0;
+            this.gridVisualizer.render();
+            this.gridVisualizer.updateHUD(`Loaded simulation: ${sim.algorithm} (${sim.status}). Click Start.`);
+        }
     }
 
     // ==========================================

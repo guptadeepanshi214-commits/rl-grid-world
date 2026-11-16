@@ -208,17 +208,30 @@
                     <div class="col-lg-8">
                         <div class="ai-card">
                             <div class="ai-card-header">
-                                <div class="ai-card-title">
-                                    <i class="bi bi-clock-history"></i> Recent Training Sessions (SQLite History)
+                                <div class="ai-card-title d-flex align-items-center gap-2">
+                                    <i class="bi bi-clock-history text-cyan"></i>
+                                    <span id="dash-history-card-title">Recent Activity (SQLite History)</span>
                                 </div>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="window.App.loadDashboardData()">
-                                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
-                                </button>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-info active" id="tab-show-training" onclick="window.App.switchDashboardTab('training')">
+                                            <i class="bi bi-cpu me-1"></i> Training
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info" id="tab-show-simulations" onclick="window.App.switchDashboardTab('simulations')">
+                                            <i class="bi bi-robot me-1"></i> Simulations
+                                        </button>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" id="btn-refresh-dashboard" onclick="window.App.loadDashboardData()">
+                                        <i class="bi bi-arrow-clockwise me-1" id="icon-refresh-dashboard"></i> Refresh
+                                    </button>
+                                </div>
                             </div>
+                            <div id="dash-refresh-alert" class="alert alert-danger py-2 px-3 small d-none mb-3"></div>
+                            <div id="dash-refresh-success" class="text-emerald small mb-2 d-none"><i class="bi bi-check2-circle me-1"></i> Dashboard refreshed with latest records.</div>
                             <div class="table-responsive">
                                 <table class="table-ai">
                                     <thead>
-                                        <tr>
+                                        <tr id="dash-table-head">
                                             <th>Algorithm</th>
                                             <th>Episodes</th>
                                             <th>Avg Reward</th>

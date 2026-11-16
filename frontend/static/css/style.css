@@ -818,3 +818,13 @@ body {
     font-size: 1.4rem;
   }
 }
+
+/* Dashboard Refresh Spinner */
+.bi-spin {
+    display: inline-block;
+    animation: bi-spin-anim 0.75s linear infinite;
+}
+@keyframes bi-spin-anim {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

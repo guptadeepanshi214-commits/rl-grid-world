@@ -265,12 +265,15 @@ class GridWorldEnv:
             return False
         if not self.is_valid_coord(pos[0], pos[1]):
             return False
+        is_added = False
         if pos in self.obstacles:
             self.obstacles.remove(pos)
-            return False
+            is_added = False
         else:
             self.obstacles.add(pos)
-            return True
+            is_added = True
+        self.reset()
+        return is_added
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize environment configuration for API responses."""

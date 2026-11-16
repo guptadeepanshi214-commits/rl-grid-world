@@ -73,6 +73,22 @@ def init_db() -> None:
     )
     """)
 
+    # Simulation runs history table (stores step-by-step navigation executions)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS simulation_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        algorithm TEXT NOT NULL,
+        start_pos TEXT NOT NULL,
+        goal_pos TEXT NOT NULL,
+        steps INTEGER NOT NULL,
+        total_reward REAL NOT NULL,
+        success INTEGER NOT NULL,
+        path_json TEXT,
+        status TEXT
+    )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -221,3 +237,97 @@ def get_latest_comparison() -> Optional[Dict[str, Any]]:
         return json.loads(row["summary_json"])
     except Exception:
         return None
+
+
+def save_simulation_run(sim_data: Dict[str, Any]) -> int:
+    """Save an individual agent simulation run to SQLite."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    ts = sim_data.get("timestamp", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+    path_json = json.dumps(sim_data.get("path", []))
+    start_str = json.dumps(sim_data.get("start", [0, 0]))
+    goal_str = json.dumps(sim_data.get("goal", [0, 0]))
+
+    cursor.execute("""
+    INSERT INTO simulation_history (
+        timestamp, algorithm, start_pos, goal_pos, steps, total_reward, success, path_json, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        ts,
+        sim_data.get("algorithm", "Unknown"),
+        start_str,
+        goal_str,
+        int(sim_data.get("steps", 0)),
+        float(sim_data.get("total_reward", 0.0)),
+        1 if sim_data.get("success", False) else 0,
+        path_json,
+        sim_data.get("status", "completed")
+    ))
+    sim_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return sim_id
+
+
+def get_simulation_history(limit: int = 25) -> List[Dict[str, Any]]:
+    """Retrieve recent simulation executions from SQLite."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM simulation_history ORDER BY id DESC LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        if d.get("path_json"):
+            try:
+                d["path"] = json.loads(d["path_json"])
+            except Exception:
+                d["path"] = []
+        if d.get("start_pos"):
+            try:
+                d["start_pos"] = json.loads(d["start_pos"])
+            except Exception:
+                pass
+        if d.get("goal_pos"):
+            try:
+                d["goal_pos"] = json.loads(d["goal_pos"])
+            except Exception:
+                pass
+        results.append(d)
+    conn.close()
+    return results
+
+
+def get_simulation_stats() -> Dict[str, Any]:
+    """Compute summary metrics across recorded simulations."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT 
+        COUNT(*) as total_simulations,
+        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_simulations,
+        AVG(total_reward) as avg_reward,
+        AVG(steps) as avg_steps
+    FROM simulation_history
+    """)
+    row = cursor.fetchone()
+    conn.close()
+    if not row or row["total_simulations"] == 0:
+        return {
+            "total_simulations": 0,
+            "successful_simulations": 0,
+            "success_rate": 0.0,
+            "avg_reward": 0.0,
+            "avg_steps": 0.0
+        }
+    tot = row["total_simulations"]
+    succ = row["successful_simulations"] or 0
+    return {
+        "total_simulations": tot,
+        "successful_simulations": succ,
+        "success_rate": round((succ / tot) * 100.0, 1),
+        "avg_reward": round(row["avg_reward"] or 0.0, 2),
+        "avg_steps": round(row["avg_steps"] or 0.0, 1)
+    }
